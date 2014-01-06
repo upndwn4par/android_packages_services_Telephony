@@ -50,6 +50,7 @@ import com.android.internal.telephony.ITelephony;
 import com.android.internal.telephony.ITelephonyListener;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
+import com.android.internal.telephony.RILConstants;
 import com.android.services.telephony.common.Call;
 
 import com.android.internal.util.HexDump;
@@ -75,6 +76,7 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
     private static final int CMD_ANSWER_RINGING_CALL = 4;
     private static final int CMD_END_CALL = 5;  // not used yet
     private static final int CMD_SILENCE_RINGER = 6;
+    private static final int CMD_TOGGLE_STATE = 7;
 
     /** The singleton instance. */
     private static PhoneInterfaceManager sInstance;
@@ -189,6 +191,10 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
                     synchronized (request) {
                         request.notifyAll();
                     }
+                    break;
+
+                case CMD_TOGGLE_STATE:
+                    // nothing here
                     break;
 
                 default:
@@ -320,6 +326,13 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
         Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse(url));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mApp.startActivity(intent);
+    }
+
+    public void toggleMobileNetwork(int networkStatus) {
+        mPhone.setPreferredNetworkType(networkStatus,
+                mMainThreadHandler.obtainMessage(CMD_TOGGLE_STATE));
+        android.provider.Settings.Global.putInt(mApp.getContentResolver(),
+                android.provider.Settings.Global.PREFERRED_NETWORK_MODE, networkStatus);
     }
 
     private boolean showCallScreenInternal(boolean specifyInitialDialpadState,
@@ -932,6 +945,10 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
         return mPhone.getLteOnCdmaMode();
     }
 
+    public int getLteOnGsmMode() {
+        return mPhone.getLteOnGsmMode();
+    }
+
     @Override
     public void toggleHold() {
         enforceModifyPermission();
@@ -1176,4 +1193,3 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
         }
     }
 }
-
